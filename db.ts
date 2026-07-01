@@ -10,20 +10,27 @@ let pool: pg.Pool | null = null;
 let isDbConnected = false;
 
 if (DATABASE_URL) {
-  console.log('DATABASE_URL detected. Connecting to PostgreSQL...');
-  pool = new Pool({
-    connectionString: DATABASE_URL,
-    ssl: DATABASE_URL.includes('localhost') || DATABASE_URL.includes('127.0.0.1')
-      ? false
-      : { rejectUnauthorized: false },
-    max: 20, // optimized for ~100 concurrent users
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000,
-  });
+  try {
+    console.log('DATABASE_URL detected. Connecting to PostgreSQL...');
+    pool = new Pool({
+      connectionString: DATABASE_URL,
+      ssl: DATABASE_URL.includes('localhost') || DATABASE_URL.includes('127.0.0.1')
+        ? false
+        : { rejectUnauthorized: false },
+      max: 20, // optimized for ~100 concurrent users
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000, // short connection timeout (2s)
+      query_timeout: 2000, // short query timeout (2s)
+    });
 
-  pool.on('error', (err) => {
-    console.error('Unexpected error on idle PostgreSQL client:', err);
-  });
+    pool.on('error', (err) => {
+      console.error('Unexpected error on idle PostgreSQL client:', err);
+    });
+  } catch (err) {
+    console.error('Failed to create PostgreSQL pool. Falling back to memory mode.', err);
+    pool = null;
+    isDbConnected = false;
+  }
 } else {
   console.warn('DATABASE_URL is not configured. Running in high-performance IN-MEMORY fallback mode.');
 }
