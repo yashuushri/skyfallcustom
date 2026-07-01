@@ -16,18 +16,65 @@ const PORT = Number(process.env.PORT) || 3000;
 // Set up compression for fast bundle delivery
 app.use(compression());
 
-// Set up Helmet with permissive CSP for development assets but strong production headers
+// Set up Helmet with cross-origin friendly production settings
 app.use(
   helmet({
-    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
 
 // Body parser with size limits to prevent DDoS / malformed payload exploits
 app.use(express.json({ limit: '15kb' }));
 
-// Dedicated health-check endpoint for Railway, Supabase, and container orchestrators
+// Parse secure origins from environment variables to prevent cross-origin exploits
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim().toLowerCase())
+  : [];
+if (process.env.APP_URL) allowedOrigins.push(process.env.APP_URL.trim().toLowerCase());
+if (process.env.CLIENT_URL) allowedOrigins.push(process.env.CLIENT_URL.trim().toLowerCase());
+if (process.env.VITE_API_URL) allowedOrigins.push(process.env.VITE_API_URL.trim().toLowerCase());
+
+// Add default production and local domains
+allowedOrigins.push('https://skyfallcustom.vercel.app');
+allowedOrigins.push('https://skyfallcustom.onrender.com');
+allowedOrigins.push('http://localhost:3000');
+allowedOrigins.push('http://localhost:5173');
+allowedOrigins.push('http://127.0.0.1:3000');
+allowedOrigins.push('http://127.0.0.1:5173');
+
+// Deduplicate and filter empty values
+const cleanAllowedOrigins = Array.from(new Set(allowedOrigins.filter(Boolean)));
+
+// Express CORS middleware applied to all endpoints
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    const lowerOrigin = origin.toLowerCase().trim();
+    if (cleanAllowedOrigins.includes(lowerOrigin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+  } else {
+    if (cleanAllowedOrigins.length > 0) {
+      res.setHeader('Access-Control-Allow-Origin', cleanAllowedOrigins[0]);
+    }
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// Dedicated health-check endpoint as required
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
@@ -38,32 +85,18 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Parse secure origins from environment variables to prevent cross-origin exploits
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim().toLowerCase())
-  : [];
-if (process.env.APP_URL) allowedOrigins.push(process.env.APP_URL.trim().toLowerCase());
-if (process.env.CLIENT_URL) allowedOrigins.push(process.env.CLIENT_URL.trim().toLowerCase());
-if (process.env.VITE_API_URL) allowedOrigins.push(process.env.VITE_API_URL.trim().toLowerCase());
-
-// Always support common localhost development environments
-allowedOrigins.push('http://localhost:3000');
-allowedOrigins.push('http://localhost:5173');
-allowedOrigins.push('http://127.0.0.1:3000');
-allowedOrigins.push('http://127.0.0.1:5173');
-
-// Deduplicate and filter empty values
-const cleanAllowedOrigins = Array.from(new Set(allowedOrigins.filter(Boolean)));
-
-// Setup Socket.IO with clean, secure allowed origins
+// Setup Socket.IO with clean, secure allowed origins and transports
 const io = new SocketServer(server, {
   cors: {
     origin: (origin, callback) => {
-      // In non-browser clients (such as backend testing tools or same-origin), origin may be undefined
-      if (!origin || cleanAllowedOrigins.includes(origin.toLowerCase())) {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      const lowerOrigin = origin.toLowerCase().trim();
+      if (cleanAllowedOrigins.includes(lowerOrigin)) {
         callback(null, true);
       } else {
-        // Fallback for previews, otherwise strictly validate
         if (process.env.NODE_ENV !== 'production') {
           callback(null, true);
         } else {
@@ -75,6 +108,7 @@ const io = new SocketServer(server, {
     methods: ['GET', 'POST'],
     credentials: true,
   },
+  transports: ['polling', 'websocket'],
   pingInterval: 10000,
   pingTimeout: 5000,
   allowEIO3: true, // legacy socket.io client compatibility
@@ -876,8 +910,10 @@ io.on('connection', (socket: Socket) => {
       readySet: new Set(),
     });
 
-    // Persist to PostgreSQL if configured
-    await saveRoom(roomId, mergedSettings.roomName, mergedSettings, initialStats, []);
+    // Persist to PostgreSQL if configured (non-blocking)
+    saveRoom(roomId, mergedSettings.roomName, mergedSettings, initialStats, []).catch(err => {
+      console.error(`Failed to save room ${roomId} to database:`, err);
+    });
 
     // Map socket to rooms/players
     socket.join(roomId);
@@ -1031,7 +1067,9 @@ io.on('connection', (socket: Socket) => {
     }
 
     room.settings = { ...room.settings, ...settings };
-    await saveRoom(roomCode, room.settings.roomName, room.settings, room.stats, room.customPacks);
+    saveRoom(roomCode, room.settings.roomName, room.settings, room.stats, room.customPacks).catch(err => {
+      console.error(`Failed to save settings for room ${roomCode}:`, err);
+    });
     broadcastState(roomCode);
   });
 
@@ -1045,7 +1083,9 @@ io.on('connection', (socket: Socket) => {
     if (!playerObj || !playerObj.isHost) return;
 
     room.customPacks = packs;
-    await saveRoom(roomCode, room.settings.roomName, room.settings, room.stats, room.customPacks);
+    saveRoom(roomCode, room.settings.roomName, room.settings, room.stats, room.customPacks).catch(err => {
+      console.error(`Failed to save custom packs for room ${roomCode}:`, err);
+    });
     broadcastState(roomCode);
   });
 
@@ -1283,9 +1323,12 @@ io.on('connection', (socket: Socket) => {
     const targetPlayer = room.players.find(p => p.id === targetPlayerId);
     if (!targetPlayer) return;
 
+    room.players.forEach(p => {
+      p.isHost = false;
+    });
     targetPlayer.isHost = true;
 
-    console.log(`Host added: ${targetPlayer.name} in room ${roomCode}`);
+    console.log(`Host migrated to: ${targetPlayer.name} in room ${roomCode}`);
     broadcastState(roomCode);
   });
 
