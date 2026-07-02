@@ -1898,14 +1898,27 @@ function App() {
                                   : 'bg-[#1c1c1c] border-neutral-800 text-neutral-400 hover:bg-[#252525] hover:border-neutral-700 active:scale-[0.98] cursor-pointer'
                             }`}
                           >
-                            <div className="flex justify-between items-center">
-                              <span>{p.name}</span>
-                              {hasVotedForThem && (
-                                <span className="text-[10px] bg-blue-600 text-white font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
-                                  Voted
-                                </span>
-                              )}
-                            </div>
+                            <div className="flex justify-between items-center w-full">
+
+  <span>{p.name}</span>
+
+  <div className="flex items-center gap-2">
+
+    {voteCounts[p.id] > 0 && (
+      <span className="bg-red-600 text-white px-2 py-0.5 rounded-md text-[10px] font-black">
+        {voteCounts[p.id]} Vote{voteCounts[p.id] > 1 ? "s" : ""}
+      </span>
+    )}
+
+    {hasVotedForThem && (
+      <span className="text-[10px] bg-blue-600 text-white font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+        Voted
+      </span>
+    )}
+
+  </div>
+
+</div>
                           </button>
                         );
                       })}
