@@ -109,8 +109,14 @@ function App() {
   const fetchRoomValidation = async (code: string) => {
     setRoomValidation({ loading: true, exists: false });
     try {
-      const response = await fetch(`/api/room/${code}`);
-      if (response.ok) {
+  const API_BASE =
+    import.meta.env.VITE_SERVER_URL ||
+    import.meta.env.VITE_API_URL ||
+    "https://skyfallcustom.onrender.com";
+
+  const response = await fetch(`${API_BASE}/api/room/${code}`);
+
+  if (response.ok) {
         const data = await response.json();
         let errorMsg = undefined;
         if (!data.exists) {
