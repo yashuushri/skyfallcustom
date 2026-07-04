@@ -1,0 +1,6 @@
+{
+  "name": "Spyfall Custom",
+  "description": "A highly customizable and secure multiplayer Spyfall-style social deduction game with responsive modern UI and synth sound effects.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
