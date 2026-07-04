@@ -1,0 +1,159 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+html, body {
+  background-color: #181818;
+  color: #f3f4f6;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbar matching the dark theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #181818;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3b82f6;
+}
+
+/* 3D Flip Card Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.rotateY-180 {
+  transform: rotateY(180deg);
+}
+
+/* GPU-Accelerated Floating Emoji Animations */
+@keyframes floatUpLeft1 {
+  0% {
+    transform: translate(0, 0) scale(0.2) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-10vw, -30vh) scale(1.1) rotate(-15deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-25vw, -60vh) scale(0.95) rotate(10deg);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-45vw, -100vh) scale(0.8) rotate(-35deg);
+    opacity: 0;
+  }
+}
+
+@keyframes floatUpLeft2 {
+  0% {
+    transform: translate(0, 0) scale(0.2) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-2vw, -25vh) scale(1.2) rotate(15deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-15vw, -55vh) scale(1.0) rotate(-10deg);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(-30vw, -95vh) scale(0.7) rotate(25deg);
+    opacity: 0;
+  }
+}
+
+@keyframes floatUpLeft3 {
+  0% {
+    transform: translate(0, 0) scale(0.2) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-15vw, -20vh) scale(1.0) rotate(-25deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-35vw, -50vh) scale(1.1) rotate(15deg);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-60vw, -90vh) scale(0.6) rotate(-45deg);
+    opacity: 0;
+  }
+}
+
+@keyframes floatUpLeft4 {
+  0% {
+    transform: translate(0, 0) scale(0.2) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-5vw, -35vh) scale(1.15) rotate(10deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-10vw, -65vh) scale(0.9) rotate(-20deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-20vw, -105vh) scale(0.75) rotate(40deg);
+    opacity: 0;
+  }
+}
+
+@keyframes floatUpLeft5 {
+  0% {
+    transform: translate(0, 0) scale(0.2) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-8vw, -28vh) scale(1.05) rotate(-5deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-20vw, -58vh) scale(1.15) rotate(5deg);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(-35vw, -100vh) scale(0.7) rotate(-15deg);
+    opacity: 0;
+  }
+}
+
+.animate-float-1 {
+  animation: floatUpLeft1 2s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+.animate-float-2 {
+  animation: floatUpLeft2 2s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+.animate-float-3 {
+  animation: floatUpLeft3 2s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+.animate-float-4 {
+  animation: floatUpLeft4 2s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+.animate-float-5 {
+  animation: floatUpLeft5 2s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
